@@ -12,7 +12,7 @@ const stylesHandler = MiniCssExtractPlugin.loader;
 const config = {
   entry: "./src/index.tsx",
   output: {
-    path: path.resolve(__dirname, "docs"),
+    path: path.resolve(__dirname, "dist"),
   },
   devServer: {
     open: true,

@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { InboxOutlined } from "@ant-design/icons";
 import type { GetProp, UploadProps, UploadFile } from "antd";
-import { Button, Image, Upload } from "antd";
+import { Button, Image, Upload, Input, Select } from "antd";
 import { compressBase64Image } from "./process";
 
 type FileType = Parameters<GetProp<UploadProps, "beforeUpload">>[0];
@@ -14,12 +14,37 @@ const getBase64 = (file: FileType): Promise<string> =>
     reader.onerror = (error) => reject(error);
   });
 
+const { Option } = Select;
 const { Dragger } = Upload;
+
+type SelectProps = {
+  value: "KB" | "MB";
+  onChange: (val: "KB" | "MB") => void;
+};
+const SelectSize = (props: SelectProps) => {
+  const { value, onChange } = props;
+  return (
+    <Select defaultValue="KB" value={value} onChange={onChange}>
+      <Option value="KB">KB</Option>
+      <Option value="MB">MB</Option>
+    </Select>
+  );
+};
 
 const UploadComponent: React.FC = () => {
   const [fileList, setFileList] = useState<any>([]);
+  const [inputCompressNum, setInputCompressNum] = useState<number>();
+  const [unit, setUnit] = useState<"KB" | "MB">("KB");
   const [previewImage, setPreviewImage] = useState("");
   const [downloadFile, setDownloadFile] = useState();
+
+  const realTargetSize = useMemo(() => {
+    if (unit === "KB") {
+      return (inputCompressNum || 0) * 1024;
+    }
+
+    return (inputCompressNum || 0) * 1024 * 1024;
+  }, [inputCompressNum, unit]);
 
   const handleChange: UploadProps["onChange"] = (info) => {
     console.log(info);
@@ -39,7 +64,7 @@ const UploadComponent: React.FC = () => {
   const handleCompress = async () => {
     fileList.forEach(async (file: any) => {
       const previewUrl = await getBase64(file.originFileObj as FileType);
-      compressBase64Image(previewUrl).then((file: any) => {
+      compressBase64Image(previewUrl, realTargetSize).then((file: any) => {
         // const blob = new Blob([file], { type: "image/jpeg" });
         // const link = document.createElement("a");
         // link.href = URL.createObjectURL(blob);
@@ -79,10 +104,27 @@ const UploadComponent: React.FC = () => {
           uploading company data or other banned files.
         </p>
       </Dragger>
-      <Button onClick={handleCompress}>压缩</Button>
+      <div style={{ width: "300px" }}>
+        <Input
+          type="number"
+          addonAfter={<SelectSize value={unit} onChange={setUnit} />}
+          value={inputCompressNum}
+          onChange={(e) => setInputCompressNum(Number(e.target.value))}
+        ></Input>
+        <Button onClick={handleCompress} disabled={fileList?.length}>
+          压缩
+        </Button>
+      </div>
+
       {/* <Button onClick={handleDownload}>下载</Button> */}
     </>
   );
 };
 
 export default UploadComponent;
+
+/**
+ * 邮件模板
+ * 预览、导入、导出
+ * str api
+ */
